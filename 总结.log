@@ -1,0 +1,398 @@
+一，Handler机制
+
+ActivityThread android程序的入口。有main（）方法Looper.preparMainLooper（）
+
+1，main（）方法里面有Looper.loper();(最后一行除了抛异常)
+2，looper 就是个循环器,循环器里面有一个MessageQueue。
+3，H类--》是系统的handler的子类，四大组件的生命周期是通过系统的Handler来处理的。
+4，应用程序退出，Looper.loop.quit();清空消息队列(系统函数)
+5，Message 调用Obtain方法  从消息池（链表结构）取，如果spool为null 就直接new Message();
+6， for(;;){
+
+	Message m=queue.next();
+}
+7，msg.tartget.dispatchMessage:tartget就是这个Message的Handler.
+8,msg在Looper里面回收，执行是在Looper。looper()方法里面msg.tartget.dispatchMessage（）执行完成后调用的 msg.recycleUnchecked()
+9，Looper.prepara（）-》关联主线程  ThreadLocal 线程安全机制，解决线程同步，充当线程与线程直接的桥梁作用，
+多个线程访问同一个数据时，让ThreaLocal持有数据的副本，让Thread去访问这个ThreadLocal的副本。
+	mThreadLocal.set(Looper). 保护主线程的，Looper不能让子线程直接访问。
+10，每个线程都有ThreadLocal.Values对象 Values(HashMap保存键值对)Values 放的是ThreadLocal,和value。妈的，名字取一样的 搞死了。
+11，子线程默认没有消息循环器，需要手动Looper.prepara（），Looper.prepara（）就会给LocalThread设值。然后还要调用Looper.loop();
+
+
+二，内存泄漏引起的问题：
+1，静态变量引用
+2，非静态内部类应用,静态内部类会被释放。
+3，资源没有关闭（Bitmap,cursor，自定义属性没有调用recy等）
+4,无限循环动画，在onDestory没有终止动画，Activity就会成为泄漏对象
+5，不需要监听未移除时会发生内存泄漏。
+
+三，RxJava:
+Subscriber是对Oberver接口的抽象类，功能的扩展
+
+action1 action0是一个接口，只有一个方法call(),没有返回参数，但是可以将onCompletion（）方法里面的执行结果作为参数给action0,
+2,Observerable.oncreate(new OnSubScriable<Drawable>(){
+	onCall()
+	onNext();
+	onComplte();
+	onErrot();
+}).subscrib(new Observer(subscriber){
+
+	
+})
+
+3.Scheduler 
+
+Schedulers.immediate(): 直接在当前线程运行，相当于不指定线程。这是默认的 Scheduler。
+Schedulers.newThread(): 总是启用新线程，并在新线程执行操作。
+Schedulers.io(): I/O 操作（读写文件、读写数据库、网络信息交互等）所使用的 Scheduler。行为模式和 newThread() 差不多，区别在于 io() 的内部实现是是用一个无数量上限的线程池，可以重用空闲的线程，因此多数情况下 io() 比 newThread() 更有效率。不要把计算工作放在 io() 中，可以避免创建不必要的线程。
+Schedulers.computation(): 
+
+
+4,Func有返回值，Aciton 没有返回值。
+
+
+四，多线程：
+FutureTask一个可取消的异步计算，FutureTask 实现了Future的基本方法，提空 start cancel 操作，可以查询计算是否已经完成，
+
+并且可以获取计算的结果。结果只可以在计算完成之后获取，get方法会阻塞当计算没有完成的时候，一旦计算已经完成，
+那么计算就不能再次启动或是取消。
+
+一个FutureTask 可以用来包装一个 Callable 或是一个runnable对象。因为FurtureTask实现了Runnable方法，所以一个 
+FutureTask可以提交(submit)给一个Excutor执行(excution).
+
+
+
+在Future接口中声明了5个方法，下面依次解释每个方法的作用：
+
+cancel方法用来取消任务，如果取消任务成功则返回true，如果取消任务失败则返回false。参数mayInterruptIfRunning表示是否允许取消正在执行却没有执行完毕的任务，如果设置true，则表示可以取消正在执行过程中的任务。如果任务已经完成，
+则无论mayInterruptIfRunning为true还是false，此方法肯定返回false，即如果取消已经完成的任务会返回false；如果任务正在执行，若mayInterruptIfRunning设置为true，则返回true，若mayInterruptIfRunning设置为false，则返回false；
+如果任务还没有执行，则无论mayInterruptIfRunning为true还是false，肯定返回true。
+isCancelled方法表示任务是否被取消成功，如果在任务正常完成前被取消成功，则返回 true。
+isDone方法表示任务是否已经完成，若任务完成，则返回true；
+get()方法用来获取执行结果，这个方法会产生阻塞，会一直等到任务执行完毕才返回；
+get(long timeout, TimeUnit unit)用来获取执行结果，如果在指定时间内，还没获取到结果，就直接返回null。
+
+
+五，内部类
+1，普通内部类
+2，匿名内部类
+3，静态内部类（可以做线程安全的单例）
+4,方法内部类，也叫局部内部类。
+
+六。Service与IntentService  后者是前者的子类，不需要重写onStartCommand,onBind方法  只需重写handleIntent方法，并且后者会开启子线程，可以把耗时任务直接放在handleIntent方法中。而前者不需要；
+七，UI绘制流程
+	1,onMesure 测量，测量自己有多大，如果是ViewGroup还会测量子控件有多大。http://www.android100.org/html/201605/26/239524.html
+	2，onLayout: 
+	3，onDrawa:
+    一 mesure 过程
+	如何合理测量一颗viewTree。
+	因为谷歌设计的自适应尺寸机制，造成了宽高不确定，所以就需要进行测量，mesure过程会比那里整颗View树，然后依次测量每一个View的真实尺寸。
+	
+	
+	1，	DecoreView 的onMesure方法内部遍历整个子view 并为子view去测量宽高。
+	   count = mMatchParentChildren.size();
+        if (count > 1) {
+            for (int i = 0; i < count; i++) {
+                final View child = mMatchParentChildren.get(i);
+                final MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
+
+                final int childWidthMeasureSpec;
+                if (lp.width == LayoutParams.MATCH_PARENT) {
+                    final int width = Math.max(0, getMeasuredWidth()
+                            - getPaddingLeftWithForeground() - getPaddingRightWithForeground()
+                            - lp.leftMargin - lp.rightMargin);
+                    childWidthMeasureSpec = MeasureSpec.makeMeasureSpec(
+                            width, MeasureSpec.EXACTLY);
+                } else {
+                    childWidthMeasureSpec = getChildMeasureSpec(widthMeasureSpec,
+                            getPaddingLeftWithForeground() + getPaddingRightWithForeground() +
+                            lp.leftMargin + lp.rightMargin,
+                            lp.width);
+                }
+
+                final int childHeightMeasureSpec;
+                if (lp.height == LayoutParams.MATCH_PARENT) {
+                    final int height = Math.max(0, getMeasuredHeight()
+                            - getPaddingTopWithForeground() - getPaddingBottomWithForeground()
+                            - lp.topMargin - lp.bottomMargin);
+                    childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(
+                            height, MeasureSpec.EXACTLY);
+                } else {
+                    childHeightMeasureSpec = getChildMeasureSpec(heightMeasureSpec,
+                            getPaddingTopWithForeground() + getPaddingBottomWithForeground() +
+                            lp.topMargin + lp.bottomMargin,
+                            lp.height);
+                }
+
+                child.measure(childWidthMeasureSpec, childHeightMeasureSpec);
+            }
+        }
+		int 32位，前面两位当作mode,后面30位当作值
+		2，mode :
+				1)EXACTLY:精确的，给了固定的值（Match_Parent、）
+				2）AT_MOST:根据父容器当前的大小，结合你指定的尺寸参考值考虑应该是多大尺寸（Wrap_Content）
+				3）UNSPECIFIED：最多的，根据当前的情况。一般不会出现在自己写的控件中，一般是出现在ListView和ScrollView.大小不确定，同时大小还是变化的，会通过多次测量。
+		   value:宽高的实际值。		
+			
+			ViewGroup 测量方法：measureChildren,measureChildWithMargin,measureChild
+	二、layout过程
+	三、draw过程
+八，事件传递
+1，    ListenerInfo li = mListenerInfo;
+            if (li != null && li.mOnTouchListener != null
+                    && (mViewFlags & ENABLED_MASK) == ENABLED
+                    && li.mOnTouchListener.onTouch(this, event)) {
+                result = true;
+            }
+
+            if (!result && onTouchEvent(event)) {
+                result = true;
+            }
+		
+	1，dispatchTouchEvent->onTouch方法返回为true  那么就不会进入onTouchEvent disPatchEvent返回为true，就不会继续向下分发，onclick方法是不会执行的。
+	2，dispatchTouchEvent->.onTouch方法返回为false ->就会调用onTouchEvent ->dispatchTouchEvent还是会返回true
+	3，如果设置enable=false->li.mOnTouchListener.onTouch不会执行-》onTouchEvent 会执行
+	4,onClick事件是在onTouchEvent方法内部 UP分支去执行
+2，ViewGroup+View事件分发
+	
+	    final boolean intercepted;
+            if (actionMasked == MotionEvent.ACTION_DOWN
+                    || mFirstTouchTarget != null) {
+                final boolean disallowIntercept = (mGroupFlags & FLAG_DISALLOW_INTERCEPT) != 0;
+                if (!disallowIntercept) {
+                    intercepted = onInterceptTouchEvent(ev);
+                    ev.setAction(action); // restore action in case it was changed
+                } else {
+                    intercepted = false;
+                }
+            } else {
+                // There are no touch targets and this action is not an initial down
+                // so this view group continues to intercept touches.
+                intercepted = true;
+            }
+
+	1，在dispatchTouchEvent-》dispatchTransformedTouchEvent-》       
+	
+	
+	 if (cancel || oldAction == MotionEvent.ACTION_CANCEL) {
+            event.setAction(MotionEvent.ACTION_CANCEL);
+            if (child == null) {
+                handled = super.dispatchTouchEvent(event);
+            } else {
+                handled = child.dispatchTouchEvent(event);
+            }
+            event.setAction(oldAction);
+            return handled;
+        }
+九、Picsoo源码http://blog.csdn.net/yulyu/article/details/55045763
+十、okhttp:http://www.jianshu.com/p/aad5aacd79bf
+		OkHttpClient.Build()创建一个OkHttpClient,OkHttpClient有一个方法 newCalls 创建一个RealCall. 同时需要一个Request、OKHttpClient有一个Dispatcher进行任务调度线程分发
+，里面有两个个双向队列ArrayDeque,readyAsyncCalls，runningAsyncCalls。分别存放缓存任务和正在执行的任务AsyncCall（RealCall的内部类继承了NamedRunnable），AsyncCall执行完成后会client.dispatcher().finished(this);
+finish方法内部：
+  private <T> void finished(Deque<T> calls, T call, boolean promoteCalls) {
+    int runningCallsCount;
+    Runnable idleCallback;
+    synchronized (this) {
+      if (!calls.remove(call)) throw new AssertionError("Call wasn't in-flight!");
+      if (promoteCalls) promoteCalls();
+      runningCallsCount = runningCallsCount();
+      idleCallback = this.idleCallback;
+    }
+
+    if (runningCallsCount == 0 && idleCallback != null) {
+      idleCallback.run();
+    }
+  }
+  
+  Dispatcher还维护了一个线程池：
+
+  public synchronized ExecutorService executorService() {
+    if (executorService == null) {
+      executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
+          new SynchronousQueue<Runnable>(), Util.threadFactory("OkHttp Dispatcher", false));
+    }
+    return executorService;
+  }
+int corePoolSize: 最小并发线程数，这里并发同时包括空闲与活动的线程，如果是0的话，空闲一段时间后所有线程将全部被销毁。
+int maximumPoolSize: 最大线程数，当任务进来时可以扩充的线程最大值，当大于了这个值就会根据丢弃处理机制来处理
+long keepAliveTime: 当线程数大于corePoolSize时，多余的空闲线程的最大存活时间，类似于HTTP中的Keep-alive
+TimeUnit unit: 时间单位，一般用秒
+BlockingQueue<Runnable> workQueue: 工作队列，先进先出，可以看出并不像Picasso那样设置优先队列。
+ThreadFactory threadFactory: 单个线程的工厂，可以打Log，设置Daemon(即当JVM退出时，线程自动结束)等
+可以看出，在Okhttp中，构建了一个阀值为[0, Integer.MAX_VALUE]的线程池，它不保留任何最小线程数，随时创建更多的线程数，当线程空闲时只能活60秒，它使用了一个不存储元素的阻塞工作队列，一个叫做"OkHttp Dispatcher"的线程工厂。
+
+也就是说，在实际运行中，当收到10个并发请求时，线程池会创建十个线程，当工作完成后，线程池会在60s后相继关闭所有线程。
+十一、retrofit
+十二、Dragger2
+
+十三、APP启动流程-》开启一个main函数（ActivityThread里面有个main函数）
+
+	java内存回收要了解一下
+
+十四、A——》B ：先调用A的onPause再调用B的三个方法，再调用A的 onStop
+	
+
+touchtest D/MainActivity: onPause
+04-12 02:51:25.764 1563-1563/com.xm.touchtest D/MainActivity: TouchConflicActivity onCreate
+04-12 02:51:25.764 1563-1563/com.xm.touchtest D/MainActivity: TouchConflicActivity onStart
+04-12 02:51:25.764 1563-1563/com.xm.touchtest D/MainActivity: TouchConflicActivityonResume
+04-12 02:51:26.192 1563-1563/com.xm.touchtest D/MainActivity: onSaveInstanceState
+04-12 02:51:26.192 1563-1563/com.xm.touchtest D/MainActivity: onStop
+
+关闭B：先调用B的onPause再调用A的onRestart ->onStart->onResume 最后调用B的onStop  onDestory
+
+04-12 02:53:06.648 1563-1563/com.xm.touchtest D/MainActivity: TouchConflicActivityonPause
+04-12 02:53:06.648 1563-1563/com.xm.touchtest D/MainActivity: onRestart
+04-12 02:53:06.648 1563-1563/com.xm.touchtest D/MainActivity: onStart
+04-12 02:53:06.648 1563-1563/com.xm.touchtest D/MainActivity: onResume
+04-12 02:53:07.028 1563-1563/com.xm.touchtest D/MainActivity: TouchConflicActivityonStop
+04-12 02:53:07.028 1563-1563/com.xm.touchtest D/MainActivity: TouchConflicActivityonDestroy
+
+”
+十五：Java内存回收机制
+http://blog.csdn.net/initphp/article/details/30487407
+十六：java泛型http://www.cnblogs.com/lwbqqyumidi/p/3837629.html
+十七：Http连接过程：
+    1、获取IP。浏览器地址栏中输入"http://www.xxx.edu.cn/"并提交之后，首先它会在DNS本地缓存表中查找，如果有则直接告诉IP地址。如果没有则要求网关DNS进行查找，如此下去，当找到对应的ip后，则返回给浏览器。
+    2、建立TCP连接。当获取到IP之后，就开始与所请求的服务器建立TCP连接，你可以在下图中发现syn,ack，这些标识符就是用来同步用的。
+    3、连接建立后，就向服务器发出http请求(大家可以从图中看出来)。如果是HTTP1.0的版本则，每一次请求结束后，就释放TCP连接。
+
+十八：UI渲染优化
+    1，Android系统每隔16ms就重新绘制一次Activity，所以说我们需要在16ms内完成屏幕的整个刷新操作，这样才能达到每秒60帧。超过16秒，GPU就要等待。
+    常见的UI渲染问题：
+	http://blog.csdn.net/ccj659/article/details/53219288
+
+十九，数据结构
+	1，ArrayLis
+
+
+		ArrayList是数组结构，实现了Collection接口，默认容量为10（所以，为了减少内存开销，如果知道是少于10个元素，就要指定ArrayList的长度）。每次add一个元素时都会先进行容量检查。
+   public boolean add(E e) {
+        ensureCapacityInternal(size + 1);  // Increments modCount!!
+        elementData[size++] = e;
+        return true;
+    }
+	
+	每次扩容都是增加原来的一半 old>>1;
+    private void ensureCapacityInternal(int minCapacity) {
+        if (elementData == EMPTY_ELEMENTDATA) {
+            minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);
+        }
+
+        ensureExplicitCapacity(minCapacity);
+    }
+	有一个	modCount参数用于计算扩容次数。
+    private void ensureExplicitCapacity(int minCapacity) {
+        modCount++;
+
+        // overflow-conscious code
+        if (minCapacity - elementData.length > 0)
+            grow(minCapacity);
+    }
+    扩容后，把原来的数据拷贝到新数组中，最大容量不能超多Intger.MAXVALUE-8;
+    private void grow(int minCapacity) {
+        // overflow-conscious code
+        int oldCapacity = elementData.length;
+        int newCapacity = oldCapacity + (oldCapacity >> 1);
+        if (newCapacity - minCapacity < 0)
+            newCapacity = minCapacity;
+        if (newCapacity - MAX_ARRAY_SIZE > 0)
+            newCapacity = hugeCapacity(minCapacity);
+        // minCapacity is usually close to size, so this is a win:
+        elementData = Arrays.copyOf(elementData, newCapacity);
+    }
+
+    private static int hugeCapacity(int minCapacity) {
+        if (minCapacity < 0) // overflow
+            throw new OutOfMemoryError();
+        return (minCapacity > MAX_ARRAY_SIZE) ?
+            Integer.MAX_VALUE :
+            MAX_ARRAY_SIZE;
+    }
+
+
+
+	2,LinkedList,链表结构 getFirst（）,getLast(); 
+	  get(int index)
+
+	    public E get(int index) {
+        checkElementIndex(index);
+        return node(index).item;
+    }
+	先判断这个index是大于中间数还是小于中间数的角标来决定是否从头还是从尾部开始查询
+   /**
+     * Returns the (non-null) Node at the specified element index.
+     */
+    Node<E> node(int index) {
+        // assert isElementIndex(index);
+
+        if (index < (size >> 1)) {
+            Node<E> x = first;
+            for (int i = 0; i < index; i++)
+                x = x.next;
+            return x;
+        } else {
+            Node<E> x = last;
+            for (int i = size - 1; i > index; i--)
+                x = x.prev;
+            return x;
+        }
+    }
+
+    public void add(E e) {
+            checkForComodification();
+            lastReturned = null;
+            if (next == null)
+                linkLast(e);
+            else
+                linkBefore(e, next);
+            nextIndex++;
+            expectedModCount++;
+        }
+	
+
+  /**
+     * Links e as last element.
+     */
+    void linkLast(E e) {
+        final Node<E> l = last;
+        final Node<E> newNode = new Node<>(l, e, null);
+        last = newNode;
+        if (l == null)
+            first = newNode;
+        else
+            l.next = newNode;
+        size++;
+        modCount++;
+    }
+
+
+   3，HashMap:http://tinylcy.me/2016/12/04/HashMap源码分析/
+		
+	 http://yikun.github.io/2015/04/01/Java-HashMap%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%8F%8A%E5%AE%9E%E7%8E%B0/
+
+    
+二十：APP启动流程
+	1，Binder 接收到clickEvent事件
+	2，通过Binder的IPC机制，最终调用到了ActivityManagerService.
+	3,该Service最终会做一下操作：
+		第一步通过PackageManager的resolveIntent()收集这个intent对象的指向信息.
+		指向信息被存储在一个intent对象中.
+		下面重要的一步是通过grantUriPermissionLocked()方法来验证用户是否有足够的权限去调用该intent对象指向的Activity.
+		如果有权限, ActivityManagerService会检查并在新的task中启动目标activity.
+		现在, 是时候检查这个进程的ProcessRecord是否存在了.
+		如果ProcessRecord是null, ActivityManagerService会创建新的进程来实例化目标activity.
+	4，ActivityManagerService调用startProcessLocked()方法来创建新的进程。（通过Zygote进程孵化）并调用ZygoteInit.main()方法来实例化ActivityThread对象并最终返回新进程的pid.
+	5，ActivityThread随后依次调用Looper.prepareLoop()和Looper.loop()来开启消息循环.
+
+	6， 绑定Application：ActivityThread对象中调用bindApplication()方法完成的. 该方法发送一个BIND_APPLICATION的消息到消息队列中,
+	    最终通过handleBindApplication()方法处理该消息. 然后调用makeApplication()方法来加载App的classes到内存中.
+	7,经过前两个步骤之后, 系统已经拥有了该application的进程. 后面的调用顺序就是普通的从一个已经存在的进程中启动一个新进程的activity了.
+
+	实际调用方法是realStartActivity(), 它会调用application线程对象中的sheduleLaunchActivity()发送一个LAUNCH_ACTIVITY消息到消息队列中,
+	 通过 handleLaunchActivity()来处理该消息.
+
+二十一：http://www.jcodecraeer.com/plus/list.php?tid=31（各种UI特效）
+
+https://github.com/LiuC520/react-native-jifenmao（rn项目）

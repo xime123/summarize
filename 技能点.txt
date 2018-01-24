@@ -1,0 +1,54 @@
+1,View绘制流程:
+https://www.processon.com/view/58d5cf7de4b03eea78281395
+2，Handler源码
+3，事件传递与分发。http://www.jianshu.com/p/238d1b753e64（非常好的一篇文章）
+4，java GC原理：http://blog.csdn.net/zhoudaxia/article/details/26946927
+5，反射与动态代理
+6，IOC,AOP
+7，RxJava：https://blog.piasy.com/2016/09/15/Understand-RxJava/（源码级分析）
+7：retrofit原理：http://www.apkbus.com/blog-705730-61179.html
+   retrofit 静态，半静态，动态配置：http://www.jianshu.com/p/7c907686f6c5
+8,OKHTTP原理：
+http://www.jianshu.com/p/aad5aacd79bf
+9，性能优化（堆栈）：http://www.jianshu.com/p/b60731095d79
+10,Picasso源码分析
+11，图片处理（压缩）
+12,HTTP链接原理
+13,APP启动流程:很重要：http://www.woaitqs.cc/android/2016/06/21/activity-service.html。
+14，广播与服务
+15.http://blog.csdn.net/yanbober/article/details/48394201（性能优化）
+（服务，广播，自定义控件源码，动画，架构，加密算法，ANR（点击事件5秒，广播十秒，服务20秒）,内存调优，UI绘制流程）
+16.http://blog.csdn.net/penghong_miao/article/details/52648162（自学HTML5）
+
+
+17，很好的面试宝典：http://www.jianshu.com/p/b87e9f853597，https://juejin.im/entry/57466b5e71cfe40068cd862a。
+18，进程间通信（IPC） Binder机制 ：
+ （1）：http://wangkuiwu.github.io/2014/09/01/Binder-Introduce/#anchor1
+	
+19，了解android系统架构：http://blog.csdn.net/itachi85/article/details/54695046
+
+
+20，app启动流程
+21，性能优化：电量优化，网络优化，图片压缩，apk瘦身。
+
+	（http://www.jcodecraeer.com/a/opensource/2017/0413/7819.html图片压缩）
+22，（四个月收集的各种学习文档）https://juejin.im/post/5940e0f6128fe1006a0d6cd9
+23，JVM内存模型：http://blog.csdn.net/u011936381/article/details/20039103
+24.android  谷歌文档 中文版：https://developer.android.com/guide/components/fragments.html?hl=zh-cn
+25，JNI 流程，数据库升级.
+
+JNI调用流程:
+	1):拿到C/C++代码
+	2):声明java native接口
+	3):打开Terminal,执行 javah -jni com.xxx.JniTest.java命令生成头文件。
+	4):在main文件夹下创建jni目录（与java文件夹同级），将上一步生成的.h文件		   拷贝到jni目录下。
+	5):创建C代码，实现.h文件方法，调用第一步中的C Lib，具体怎么调用 可以请		   教C++同事。
+	6）创建CMakeLists.txt文件，把第一步第五步的C代码路径写进去，同时要		   addLibName.
+	7):MakeProject,在build->intermediates->cmake->debug/release中可以找到		   so动态库。
+
+
+
+	8):将java代码打成jar包，和so库一起给调用者使用即可。
+
+26.WebSockt：http://blog.csdn.net/tangxl2008008/article/details/52421413
+
